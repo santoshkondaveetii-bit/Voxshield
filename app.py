@@ -1,10 +1,20 @@
+
+
+
+
 import streamlit as st
 import tempfile
 import os
 import io
 import hashlib
 import soundfile as sf
-from transformers import pipeline
+import os
+import imageio_ffmpeg
+
+# Make the bundled FFmpeg executable available to Transformers
+ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+os.environ["PATH"] = os.path.dirname(ffmpeg_path) + os.pathsep + os.environ.get("PATH", "")
+from transformers import pipeline 
 
 # -----------------------------------------------------------------------------
 # 1. PAGE CONFIGURATION & METADATA
