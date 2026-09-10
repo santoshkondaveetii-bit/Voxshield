@@ -1,19 +1,35 @@
-
-
-
-
-import streamlit as st
-import tempfile
 import os
 import io
 import hashlib
-import soundfile as sf
-import os
-import imageio_ffmpeg
+import tempfile
+import shutil
+import subprocess
 
-# Make the bundled FFmpeg executable available to Transformers
+import streamlit as st
+import imageio_ffmpeg
+import soundfile as sf
+
 ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
-os.environ["PATH"] = os.path.dirname(ffmpeg_path) + os.pathsep + os.environ.get("PATH", "")
+ffmpeg_dir = os.path.dirname(ffmpeg_path)
+
+os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+
+st.write("Bundled FFmpeg:", ffmpeg_path)
+st.write("FFmpeg found in PATH:", shutil.which("ffmpeg"))
+
+try:
+    result = subprocess.run(
+        ["ffmpeg", "-version"],
+        capture_output=True,
+        text=True,
+        timeout=10
+    )
+    st.write("FFmpeg test:", result.returncode)
+except Exception as e:
+    st.write("FFmpeg execution failed:", str(e))
+
+
+
 from transformers import pipeline 
 
 # -----------------------------------------------------------------------------
