@@ -7,35 +7,30 @@ import hashlib
 import tempfile
 import shutil
 import subprocess
-import stat
 
 import streamlit as st
 import imageio_ffmpeg
 import soundfile as sf
 
-# Get the FFmpeg binary bundled inside imageio-ffmpeg
+# Get the FFmpeg binary bundled with imageio-ffmpeg
 bundled_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
 
-# Create a writable directory containing an executable named "ffmpeg"
+# Streamlit Cloud gives us a writable /tmp directory
 ffmpeg_bin_dir = "/tmp/voxshield-bin"
 os.makedirs(ffmpeg_bin_dir, exist_ok=True)
 
+# Create an actual executable file called "ffmpeg"
 ffmpeg_executable = os.path.join(ffmpeg_bin_dir, "ffmpeg")
 
-# Create a link/copy only if it doesn't already exist
+# Copy the bundled FFmpeg binary to our writable directory
 if not os.path.exists(ffmpeg_executable):
-    try:
-        os.symlink(bundled_ffmpeg, ffmpeg_executable)
-    except OSError:
-        shutil.copy2(bundled_ffmpeg, ffmpeg_executable)
+    shutil.copyfile(bundled_ffmpeg, ffmpeg_executable)
 
-# Make sure it is executable
-os.chmod(
-    ffmpeg_executable,
-    os.stat(ffmpeg_executable).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-)
+# Copy the executable permission from the original binary
+original_mode = os.stat(bundled_ffmpeg).st_mode
+os.chmod(ffmpeg_executable, original_mode)
 
-# Put our FFmpeg directory FIRST in PATH
+# Put our directory FIRST in PATH
 os.environ["PATH"] = (
     ffmpeg_bin_dir
     + os.pathsep
@@ -46,7 +41,7 @@ os.environ["PATH"] = (
 # Diagnostics
 # ---------------------------------------------------------
 st.write("Bundled FFmpeg:", bundled_ffmpeg)
-st.write("FFmpeg executable:", ffmpeg_executable)
+st.write("Cloud FFmpeg:", ffmpeg_executable)
 st.write("FFmpeg found in PATH:", shutil.which("ffmpeg"))
 
 try:
@@ -64,9 +59,6 @@ except Exception as e:
     st.write("FFmpeg execution failed:", str(e))
 
 from transformers import pipeline
-
-
-
 
 
 # -----------------------------------------------------------------------------
