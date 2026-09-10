@@ -1,20 +1,52 @@
+# ---------------------------------------------------------
+# FFmpeg setup for Streamlit Cloud
+# ---------------------------------------------------------
 import os
 import io
 import hashlib
 import tempfile
 import shutil
 import subprocess
+import stat
 
 import streamlit as st
 import imageio_ffmpeg
 import soundfile as sf
 
-ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
-ffmpeg_dir = os.path.dirname(ffmpeg_path)
+# Get the FFmpeg binary bundled inside imageio-ffmpeg
+bundled_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
 
-os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+# Create a writable directory containing an executable named "ffmpeg"
+ffmpeg_bin_dir = "/tmp/voxshield-bin"
+os.makedirs(ffmpeg_bin_dir, exist_ok=True)
 
-st.write("Bundled FFmpeg:", ffmpeg_path)
+ffmpeg_executable = os.path.join(ffmpeg_bin_dir, "ffmpeg")
+
+# Create a link/copy only if it doesn't already exist
+if not os.path.exists(ffmpeg_executable):
+    try:
+        os.symlink(bundled_ffmpeg, ffmpeg_executable)
+    except OSError:
+        shutil.copy2(bundled_ffmpeg, ffmpeg_executable)
+
+# Make sure it is executable
+os.chmod(
+    ffmpeg_executable,
+    os.stat(ffmpeg_executable).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+)
+
+# Put our FFmpeg directory FIRST in PATH
+os.environ["PATH"] = (
+    ffmpeg_bin_dir
+    + os.pathsep
+    + os.environ.get("PATH", "")
+)
+
+# ---------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------
+st.write("Bundled FFmpeg:", bundled_ffmpeg)
+st.write("FFmpeg executable:", ffmpeg_executable)
 st.write("FFmpeg found in PATH:", shutil.which("ffmpeg"))
 
 try:
@@ -22,15 +54,20 @@ try:
         ["ffmpeg", "-version"],
         capture_output=True,
         text=True,
-        timeout=10
+        timeout=10,
+        check=True
     )
-    st.write("FFmpeg test:", result.returncode)
+
+    st.write("FFmpeg test: SUCCESS")
+
 except Exception as e:
     st.write("FFmpeg execution failed:", str(e))
 
+from transformers import pipeline
 
 
-from transformers import pipeline 
+
+
 
 # -----------------------------------------------------------------------------
 # 1. PAGE CONFIGURATION & METADATA
