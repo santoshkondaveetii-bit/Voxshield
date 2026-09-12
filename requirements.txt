@@ -3,3 +3,5 @@ transformers
 torch
 soundfile
 imageio-ffmpeg
+onnxruntime
+numpy
